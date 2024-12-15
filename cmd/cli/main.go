@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/nilszeilon/devstats/internal/collector"
+	"github.com/nilszeilon/devstats/internal/domain"
 	"github.com/nilszeilon/devstats/internal/storage"
 )
 
@@ -14,7 +15,7 @@ func main() {
 	log.Println("Starting devstats...")
 
 	// Initialize file storage
-	store, err := storage.NewFileStore("devstats.json")
+	store, err := storage.NewFileStore[domain.KeypressData]("keypresses.json")
 	if err != nil {
 		log.Fatalf("Failed to initialize storage: %v", err)
 	}

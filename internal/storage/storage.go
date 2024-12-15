@@ -4,34 +4,25 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
-	"time"
 )
 
-// DataPoint represents a single piece of collected data
-type DataPoint struct {
-	ID        string      `json:"id"`
-	Type      string      `json:"type"`
-	Timestamp time.Time   `json:"timestamp"`
-	Data      interface{} `json:"data"`
-}
-
 // Store defines the interface for data storage
-type Store interface {
-	Save(dataType string, data interface{}) error
-	Get(dataType string) ([]DataPoint, error)
+type Store[T any] interface {
+	Save(data T) error
+	Get() ([]T, error)
 }
 
 // FileStore implements Store interface using file storage
-type FileStore struct {
+type FileStore[T any] struct {
 	filepath string
 	mu       sync.RWMutex
-	data     []DataPoint
+	data     []T
 }
 
-func NewFileStore(filepath string) (*FileStore, error) {
-	fs := &FileStore{
+func NewFileStore[T any](filepath string) (*FileStore[T], error) {
+	fs := &FileStore[T]{
 		filepath: filepath,
-		data:     make([]DataPoint, 0),
+		data:     make([]T, 0),
 	}
 
 	// Load existing data if file exists
@@ -49,42 +40,25 @@ func NewFileStore(filepath string) (*FileStore, error) {
 	return fs, nil
 }
 
-func (fs *FileStore) Save(dataType string, data interface{}) error {
+func (fs *FileStore[T]) Save(data T) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	dp := DataPoint{
-		ID:        generateID(),
-		Type:      dataType,
-		Timestamp: time.Now(),
-		Data:      data,
-	}
-
-	fs.data = append(fs.data, dp)
+	fs.data = append(fs.data, data)
 	return fs.persist()
 }
 
-func (fs *FileStore) Get(dataType string) ([]DataPoint, error) {
+func (fs *FileStore[T]) Get() ([]T, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
-	var result []DataPoint
-	for _, dp := range fs.data {
-		if dp.Type == dataType {
-			result = append(result, dp)
-		}
-	}
-	return result, nil
+	return fs.data, nil
 }
 
-func (fs *FileStore) persist() error {
+func (fs *FileStore[T]) persist() error {
 	data, err := json.MarshalIndent(fs.data, "", "  ")
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(fs.filepath, data, 0644)
-}
-
-func generateID() string {
-	return time.Now().Format("20060102150405.000")
 }

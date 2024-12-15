@@ -7,6 +7,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/nilszeilon/devstats/internal/domain"
 	"github.com/nilszeilon/devstats/internal/storage"
 )
 
@@ -50,23 +51,15 @@ var (
 	callbackMutex  sync.Mutex
 )
 
-// KeypressData represents a single keypress event
-type KeypressData struct {
-	Key       string    `json:"key"`
-	KeyCode   int       `json:"keycode"`
-	State     string    `json:"state"` // pressed, released
-	Timestamp time.Time `json:"timestamp"`
-}
-
 // KeypressCollector handles collection of keypress data
 type KeypressCollector struct {
-	store    storage.Store
+	store    storage.Store[domain.KeypressData]
 	stopChan chan struct{}
 	keyChan  chan int64
 }
 
 // NewKeypressCollector creates a new keypress collector
-func NewKeypressCollector(store storage.Store) *KeypressCollector {
+func NewKeypressCollector(store storage.Store[domain.KeypressData]) *KeypressCollector {
 	return &KeypressCollector{
 		store:    store,
 		stopChan: make(chan struct{}),
@@ -215,13 +208,12 @@ func (kc *KeypressCollector) Start() error {
 			case <-kc.stopChan:
 				return
 			case keycode := <-kc.keyChan:
-				data := KeypressData{
+				data := domain.KeypressData{
 					Key:       keyCodeToString(keycode),
-					KeyCode:   int(keycode),
 					Timestamp: time.Now(),
 				}
 
-				if err := kc.store.Save("keypress", data); err != nil {
+				if err := kc.store.Save(data); err != nil {
 					log.Printf("Error saving keypress: %v", err)
 				}
 			}
@@ -251,9 +243,9 @@ func (kc *KeypressCollector) Stop() {
 
 // Record saves a keypress event (mainly for testing)
 func (kc *KeypressCollector) Record(key string) error {
-	data := KeypressData{
+	data := domain.KeypressData{
 		Key:       key,
 		Timestamp: time.Now(),
 	}
-	return kc.store.Save("keypress", data)
+	return kc.store.Save(data)
 }
