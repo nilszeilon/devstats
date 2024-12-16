@@ -28,6 +28,32 @@ func main() {
 		log.Fatalf("Failed to start keypress collector: %v", err)
 	}
 
+	// Create a store for file changes
+	fileChangeStore, err := storage.NewFileStore[domain.FileChangeData]("filechanges.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create the collector with paths to watch
+	paths := []string{
+		"/Users/nilszeilon",
+		// Add more paths as needed
+	}
+
+	fileCollector, err := collector.NewFileChangeCollector(fileChangeStore, paths)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Start collecting
+	err = fileCollector.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Don't forget to stop it when done
+	defer fileCollector.Stop()
+
 	log.Println("Keypress collector started. Press Ctrl+C to stop.")
 
 	// Setup signal handling
