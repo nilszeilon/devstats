@@ -117,21 +117,22 @@ func (fc *FileChangeCollector) watch() {
 				continue
 			}
 
-			var action string
 			switch {
 			case event.Op&fsnotify.Write == fsnotify.Write:
-				action = "modified"
 			case event.Op&fsnotify.Create == fsnotify.Create:
-				action = "created"
 			case event.Op&fsnotify.Remove == fsnotify.Remove:
-				action = "deleted"
 			default:
+				// we don't want chmod changes
+				continue
+			}
+
+			language := getLanguage(event.Name)
+			if language == "" {
 				continue
 			}
 
 			data := domain.FileChangeData{
-				Filepath:  event.Name,
-				Action:    action,
+				Language:  language,
 				Timestamp: time.Now(),
 			}
 
@@ -202,28 +203,33 @@ func isBlacklistedDir(path string) bool {
 	return blacklist[base]
 }
 
-// isCodeFile returns true if the file is likely a code file
-func isCodeFile(path string) bool {
+func getLanguage(path string) string {
 	ext := filepath.Ext(path)
-	codeExtensions := map[string]bool{
-		".go":     true,
-		".js":     true,
-		".ts":     true,
-		".svelte": true,
-		".py":     true,
-		".rb":     true,
-		".md":     true,
-		".java":   true,
-		".cpp":    true,
-		".c":      true,
-		".h":      true,
-		".hpp":    true,
-		".rs":     true,
-		".php":    true,
-		".css":    true,
-		".html":   true,
-		".jsx":    true,
-		".tsx":    true,
+	languageMap := map[string]string{
+		".go":     "go",
+		".js":     "javascript",
+		".ts":     "typescript",
+		".svelte": "svelte",
+		".py":     "python",
+		".rb":     "ruby",
+		".md":     "markdown",
+		".java":   "java",
+		".c":      "c",
+		".rs":     "rust",
+		".css":    "css",
+		".html":   "html",
+		".sql":    "sql",
+		".sh":     "shell",
+		".yaml":   "yaml",
+		".yml":    "yaml",
 	}
-	return codeExtensions[ext]
+
+	if lang, exists := languageMap[ext]; exists {
+		return lang
+	}
+	return ""
+}
+
+func isCodeFile(path string) bool {
+	return getLanguage(path) != ""
 }
