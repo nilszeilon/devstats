@@ -60,7 +60,7 @@ func (fc *FileChangeCollector) Start() error {
 		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 			// Handle permission errors and other access issues
 			if err != nil {
-				log.Printf("Error accessing path %s: %v", path, err)
+				// log.Printf("Error accessing path %s: %v", path, err)
 				return filepath.SkipDir
 			}
 
@@ -68,13 +68,13 @@ func (fc *FileChangeCollector) Start() error {
 				base := filepath.Base(path)
 				// Skip hidden directories (starting with a dot)
 				if len(base) > 0 && base[0] == '.' {
-					log.Printf("Skipping hidden directory: %s", path)
+					// log.Printf("Skipping hidden directory: %s", path)
 					return filepath.SkipDir
 				}
 
 				// Skip blacklisted directories
 				if isBlacklistedDir(path) {
-					log.Printf("Skipping blacklisted directory: %s", path)
+					// log.Printf("Skipping blacklisted directory: %s", path)
 					return filepath.SkipDir
 				}
 

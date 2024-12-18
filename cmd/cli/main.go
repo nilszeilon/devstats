@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/nilszeilon/devstats/internal/collector"
@@ -13,9 +14,18 @@ import (
 
 func main() {
 	log.Println("Starting devstats...")
+	// Get the current working directory (where the program was started from)
+	baseDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create absolute paths for all files
+	dbPath := filepath.Join(baseDir, "devstats.db")
+	log.Printf("Using database at: %s", dbPath)
 
 	// init sqlite storage
-	store, err := storage.NewSQLiteStore[domain.KeypressData]("./devstats.db")
+	store, err := storage.NewSQLiteStore[domain.KeypressData](dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,7 +40,7 @@ func main() {
 	}
 
 	// init sqlite storage
-	fileChangeStore, err := storage.NewSQLiteStore[domain.FileChangeData]("./devstats.db")
+	fileChangeStore, err := storage.NewSQLiteStore[domain.FileChangeData](dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}

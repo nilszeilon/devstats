@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ type TableName interface {
 func NewSQLiteStore[T any](dbPath string) (*SQLiteStore[T], error) {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
+		log.Printf("ERROR: Failed to open database: %v", err)
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
@@ -39,6 +41,7 @@ func NewSQLiteStore[T any](dbPath string) (*SQLiteStore[T], error) {
 	// Create table if it doesn't exist
 	if err := store.initTable(); err != nil {
 		db.Close()
+		log.Printf("ERROR: Failed to initialize table: %v", err)
 		return nil, fmt.Errorf("failed to initialize table: %w", err)
 	}
 
@@ -139,6 +142,7 @@ func (s *SQLiteStore[T]) Save(data T) error {
 
 	columns, _, fields, err := getFieldsAndTypes[T]()
 	if err != nil {
+		log.Printf("ERROR: Failed to get fields and types: %v", err)
 		return err
 	}
 
@@ -166,6 +170,7 @@ func (s *SQLiteStore[T]) Save(data T) error {
 
 	_, err = s.db.Exec(query, values...)
 	if err != nil {
+		log.Printf("ERROR: Failed to insert data: %v", err)
 		return fmt.Errorf("failed to insert data: %w", err)
 	}
 
