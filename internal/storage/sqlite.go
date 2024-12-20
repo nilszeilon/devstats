@@ -177,6 +177,54 @@ func (s *SQLiteStore[T]) Save(data T) error {
 	return nil
 }
 
+// FindBetween returns records between start and end timestamps
+func (s *SQLiteStore[T]) FindBetween(start, end interface{}) ([]any, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE timestamp BETWEEN ? AND ?", s.table)
+	rows, err := s.db.Query(query, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query data: %w", err)
+	}
+	defer rows.Close()
+
+	var results []any
+	for rows.Next() {
+		var data T
+		v := reflect.ValueOf(&data).Elem()
+
+		columns, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a slice of interface{} to hold the values
+		values := make([]interface{}, len(columns))
+		for i := range values {
+			values[i] = new(interface{})
+		}
+
+		err = rows.Scan(values...)
+		if err != nil {
+			return nil, err
+		}
+
+		// Skip the ID column
+		for i := 1; i < len(columns); i++ {
+			field := v.FieldByName(strings.Title(columns[i]))
+			if field.IsValid() {
+				val := reflect.ValueOf(*(values[i].(*interface{})))
+				field.Set(val.Convert(field.Type()))
+			}
+		}
+
+		results = append(results, data)
+	}
+
+	return results, nil
+}
+
 func (s *SQLiteStore[T]) Get() ([]T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
