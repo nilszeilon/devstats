@@ -22,9 +22,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Get user's home directory from environment variable
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Failed to get home directory:", err)
+	}
+
 	// Create the collector with paths to watch
 	paths := []string{
-		"/Users/nilszeilon",
+		homeDir,
 		// Add more paths as needed
 	}
 
