@@ -7,11 +7,12 @@ This is very much a work in progress, so expect breaking changes
 
 ## Features
 
-- Flexible data storage 
-- Keypress tracking (macOS support)
-- Language tracking
+- 💾 Flexible data storage (json or sqlite)
+- ⌨️  Keypress tracking (background macOS support)
+- 📊 Language tracking (keeps track of file changes)
+- 🔒 Automatic anonymization of your data (don't send ALL your keystrokes to some server)
 
-## Usage
+## How to run
 
 
 ```bash
