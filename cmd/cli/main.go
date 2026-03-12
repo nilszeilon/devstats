@@ -152,8 +152,4 @@ func main() {
 			}
 		}
 	}
-
-	log.Println("Shutting down gracefully...")
-	keypressCollector.Stop()
-	log.Println("Shutdown complete")
 }

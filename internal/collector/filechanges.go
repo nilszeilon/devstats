@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -18,11 +19,20 @@ const maxWatchedDirs = 1000 // Adjust this number based on your needs
 type FileChangeCollector struct {
 	store    storage.Store[domain.FileChangeData]
 	watcher  *fsnotify.Watcher
+	ctx      context.Context
+	cancel   context.CancelFunc
 	stopChan chan struct{}
 	paths    []string
 }
 
 func NewFileChangeCollector(store storage.Store[domain.FileChangeData], paths []string) (*FileChangeCollector, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		if ctx.Err() != nil {
+			cancel()
+		}
+	}()
+
 	// Increase system file descriptor limit
 	var rLimit syscall.Rlimit
 	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
@@ -48,6 +58,8 @@ func NewFileChangeCollector(store storage.Store[domain.FileChangeData], paths []
 	return &FileChangeCollector{
 		store:    store,
 		watcher:  watcher,
+		ctx:      ctx,
+		cancel:   cancel,
 		stopChan: make(chan struct{}),
 		paths:    paths,
 	}, nil
@@ -107,6 +119,8 @@ func (fc *FileChangeCollector) watch() {
 		select {
 		case <-fc.stopChan:
 			return
+		case <-fc.ctx.Done():
+			return
 		case event, ok := <-fc.watcher.Events:
 			if !ok {
 				return
@@ -150,6 +164,7 @@ func (fc *FileChangeCollector) watch() {
 }
 
 func (fc *FileChangeCollector) Stop() {
+	fc.cancel()
 	close(fc.stopChan)
 	fc.watcher.Close()
 }
@@ -208,20 +223,51 @@ func getLanguage(path string) string {
 	languageMap := map[string]string{
 		".go":     "go",
 		".js":     "javascript",
+		".jsx":    "javascript",
 		".ts":     "typescript",
+		".tsx":    "typescript",
 		".svelte": "svelte",
+		".vue":    "vue",
 		".py":     "python",
 		".rb":     "ruby",
 		".md":     "markdown",
 		".java":   "java",
+		".kt":     "kotlin",
 		".c":      "c",
+		".cpp":    "cpp",
+		".h":      "c",
+		".hpp":    "cpp",
 		".rs":     "rust",
 		".css":    "css",
+		".scss":   "scss",
+		".less":   "less",
 		".html":   "html",
 		".sql":    "sql",
 		".sh":     "shell",
+		".bash":   "bash",
+		".zsh":    "zsh",
 		".yaml":   "yaml",
 		".yml":    "yaml",
+		".json":   "json",
+		".xml":    "xml",
+		".toml":   "toml",
+		".ini":    "ini",
+		".swift":  "swift",
+		".m":      "objectivec",
+		".mm":     "objectivec",
+		".php":    "php",
+		".dart":   "dart",
+		".r":      "r",
+		".scala":  "scala",
+		".hs":     "haskell",
+		".erl":    "erlang",
+		".clj":    "clojure",
+		".ex":     "elixir",
+		".exs":    "elixir",
+		".lua":    "lua",
+		".pl":     "perl",
+		".groovy": "groovy",
+		".gradle": "gradle",
 	}
 
 	if lang, exists := languageMap[ext]; exists {

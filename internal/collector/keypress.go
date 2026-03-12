@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -54,14 +55,19 @@ var (
 // KeypressCollector handles collection of keypress data
 type KeypressCollector struct {
 	store    storage.Store[domain.KeypressData]
+	ctx      context.Context
+	cancel   context.CancelFunc
 	stopChan chan struct{}
 	keyChan  chan int64
 }
 
 // NewKeypressCollector creates a new keypress collector
 func NewKeypressCollector(store storage.Store[domain.KeypressData]) *KeypressCollector {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &KeypressCollector{
 		store:    store,
+		ctx:      ctx,
+		cancel:   cancel,
 		stopChan: make(chan struct{}),
 	}
 }
@@ -207,6 +213,8 @@ func (kc *KeypressCollector) Start() error {
 			select {
 			case <-kc.stopChan:
 				return
+			case <-kc.ctx.Done():
+				return
 			case keycode := <-kc.keyChan:
 				data := domain.KeypressData{
 					Key:       keyCodeToString(keycode),
@@ -233,6 +241,7 @@ func (kc *KeypressCollector) Start() error {
 
 // Stop stops collecting keypress data
 func (kc *KeypressCollector) Stop() {
+	kc.cancel()
 	callbackMutex.Lock()
 	if globalCallback == kc {
 		globalCallback = nil
