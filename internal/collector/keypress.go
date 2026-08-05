@@ -15,7 +15,24 @@ import (
 // #cgo CFLAGS: -x objective-c
 // #cgo LDFLAGS: -framework Cocoa -framework ApplicationServices
 // #import <ApplicationServices/ApplicationServices.h>
+// #import <unistd.h>
 // void external_go_callback(void*, int64_t);
+//
+// static void ensureAccessibility(void) {
+//     if (AXIsProcessTrusted()) {
+//         return;
+//     }
+//     CFStringRef key = CFSTR("AXTrustedCheckOptionPrompt");
+//     CFDictionaryRef options = CFDictionaryCreate(
+//         kCFAllocatorDefault, (const void **)&key, (const void **)&kCFBooleanTrue,
+//         1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+//     AXIsProcessTrustedWithOptions(options);
+//     CFRelease(options);
+//     // Block until the user approves in the system dialog.
+//     while (!AXIsProcessTrusted()) {
+//         usleep(500000);
+//     }
+// }
 //
 // static CGEventRef eventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
 //     if (type == kCGEventKeyDown) {
@@ -26,6 +43,7 @@ import (
 // }
 //
 // static void startEventTap(void* callback) {
+//     ensureAccessibility();
 //     CGEventMask mask = CGEventMaskBit(kCGEventKeyDown);
 //     CFMachPortRef tap = CGEventTapCreate(
 //         kCGSessionEventTap,
